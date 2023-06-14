@@ -275,7 +275,7 @@ Output:
 Waiting for alarm...
 Alarm received! Signum: 14
 
-alarm
+pipe
 #include <stdio.h>
 #include <unistd.h>
 
