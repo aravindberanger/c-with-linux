@@ -1,0 +1,368 @@
+Fork
+#include <stdio.h>
+#include <unistd.h>
+
+int main() {
+    pid_t child_pid;
+
+    child_pid = fork();  // Create a new process
+
+    if (child_pid < 0) {
+        fprintf(stderr, "Fork failed\n");
+        return 1;
+    }
+    else if (child_pid == 0) {
+        // Child process
+        printf("Hello from the child process! PID = %d\n", getpid());
+    }
+    else {
+        // Parent process
+        printf("Hello from the parent process! PID = %d\n", getpid());
+        printf("Child process ID: %d\n", child_pid);
+    }
+
+    return 0;
+}
+OUTPUT:
+Hello from the parent process! PID = 1234
+Child process ID: 1235
+Hello from the child process! PID = 1235
+
+
+EXIT
+#include <stdio.h>
+#include <stdlib.h>
+
+int main() {
+    printf("Before exit\n");
+    exit(0);
+    printf("After exit\n");  // This line will not be executed
+    return 0;
+}
+OUTPUT:
+Before exit
+
+
+ Wait
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
+int main() {
+    pid_t child_pid;
+    int status;
+    child_pid = fork();  // Create a new process
+
+    if (child_pid < 0) {
+        fprintf(stderr, "Fork failed\n");
+        return 1;
+    }
+    else if (child_pid == 0) {
+        // Child process
+        printf("Child process: PID = %d\n", getpid());
+        printf("Child process: Hello from the child process!\n");
+        sleep(2);  // Simulate some work in the child process
+        printf("Child process: Work completed\n");
+    }
+    else {
+        // Parent process
+        printf("Parent process: PID = %d\n", getpid());
+        printf("Parent process: Child process ID = %d\n", child_pid);
+        printf("Parent process: Waiting for child process to finish...\n");
+        wait(&status);  // Wait for the child process to terminate
+        if (WIFEXITED(status)) {
+            int exit_status = WEXITSTATUS(status);
+            printf("Parent process: Child process terminated with exit status: %d\n", exit_status);
+        }
+    }
+    return 0;
+}
+Output:
+Parent process: PID = 1234
+Parent process: Child process ID = 1235
+Parent process: Waiting for child process to finish...
+Child process: PID = 1235
+Child process: Hello from the child process!
+Child process: Work completed
+Parent process: Child process terminated with exit status: 0
+
+
+Open()
+#include <stdio.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+
+int main() {
+    int file_descriptor;
+    char buffer[100];
+    
+    // Open the file in read-only mode
+    file_descriptor = open("example.txt", O_RDONLY);
+    if (file_descriptor == -1) {
+        perror("Failed to open the file");
+        return 1;
+    }
+    
+    printf("File opened successfully\n");
+    close(file_descriptor);
+
+    return 0;
+}
+Output:
+File opened successfully
+ 
+ 
+ Read()
+#include <stdio.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+
+int main() {
+    int file_descriptor;
+    char buffer[100];
+    
+    file_descriptor = open("example.txt", O_RDONLY);
+    if (file_descriptor == -1) {
+        perror("Failed to open the file");
+        return 1;
+    }
+    
+    // Read from the file
+    ssize_t bytes_read = read(file_descriptor, buffer, sizeof(buffer));
+    if (bytes_read == -1) {
+        perror("Failed to read from the file");
+        close(file_descriptor);
+        return 1;
+    }
+    
+    printf("Read %zd bytes: %s\n", bytes_read, buffer);
+
+    close(file_descriptor);
+
+    return 0;
+}
+Output:
+Read 13 bytes: Hello, World!
+
+
+Ioctl()
+#include <stdio.h>
+#include <fcntl.h>
+#include <sys/ioctl.h>
+#include <linux/hdreg.h>
+
+int main() {
+    int fd;
+    struct hd_driveid drive_info;
+
+    fd = open("/dev/sda", O_RDONLY);
+    if (fd == -1) {
+        perror("Failed to open the device");
+        return 1;
+    }
+
+    if (ioctl(fd, HDIO_GET_IDENTITY, &drive_info) == -1) {
+        perror("Failed to perform ioctl operation");
+        close(fd);
+        return 1;
+    }
+
+    printf("Model: %.40s\n", drive_info.model);
+    printf("Serial Number: %.20s\n", drive_info.serial_no);
+
+    close(fd);
+
+    return 0;
+}
+Output:
+Model: ABCD HDD
+Serial Number: 1234567890
+
+
+Read()
+#include <stdio.h>
+#include <fcntl.h>
+#include <unistd.h>
+
+int main() {
+    int fd;
+    char buffer[100];
+
+    fd = open("/dev/ttyS0", O_RDONLY);
+    if (fd == -1) {
+        perror("Failed to open the device");
+        return 1;
+    }
+
+    ssize_t bytes_read = read(fd, buffer, sizeof(buffer));
+    if (bytes_read == -1) {
+        perror("Failed to read from the device");
+        close(fd);
+        return 1;
+    }
+
+    printf("Read %zd bytes: %s\n", bytes_read, buffer);
+
+    close(fd);
+
+    return 0;
+}
+Output:
+Read 10 bytes: Hello world
+
+Getpid()
+#include <stdio.h>
+#include <sys/types.h>
+#include <unistd.h>
+
+int main() {
+    pid_t pid = getpid();
+
+    printf("Process ID: %d\n", pid);
+
+    return 0;
+}
+Output:
+Process ID: 1234
+
+
+Alarm()
+#include <stdio.h>
+#include <unistd.h>
+#include <signal.h>
+
+void handle_alarm(int signum) {
+    printf("Alarm received! Signum: %d\n", signum);
+}
+
+int main() {
+    signal(SIGALRM, handle_alarm);
+    alarm(3);
+
+    printf("Waiting for alarm...\n");
+    sleep(5);
+
+    return 0;
+}
+Output:
+Waiting for alarm...
+Alarm received! Signum: 14
+
+
+Alarm()
+#include <stdio.h>
+#include <unistd.h>
+#include <signal.h>
+
+void handle_alarm(int signum) {
+    printf("Alarm received! Signum: %d\n", signum);
+}
+
+int main() {
+    signal(SIGALRM, handle_alarm);
+    alarm(3);
+
+    printf("Waiting for alarm...\n");
+    sleep(5);
+
+    return 0;
+}
+Output:
+Waiting for alarm...
+Alarm received! Signum: 14
+
+alarm
+#include <stdio.h>
+#include <unistd.h>
+
+int main() {
+    int pipefd[2];
+    char buffer[20];
+    pid_t pid;
+
+    if (pipe(pipefd) == -1) {
+        perror("Pipe creation failed");
+        return 1;
+    }
+
+    pid = fork();
+    if (pid == -1) {
+        perror("Fork failed");
+        return 1;
+    }
+
+    if (pid == 0) {
+        // Child process
+        close(pipefd[1]);  // Close the write end of the pipe
+
+        read(pipefd[0], buffer, sizeof(buffer));
+        printf("Child process received: %s\n", buffer);
+
+        close(pipefd[0]);  // Close the read end of the pipe
+    } else {
+        // Parent process
+        close(pipefd[0]);  // Close the read end of the pipe
+
+        const char* message = "Hello from parent!";
+        write(pipefd[1], message, sizeof(message));
+
+        close(pipefd[1]);  // Close the write end of the pipe
+    }
+
+    return 0;
+}
+Output:
+Child process received: Hello from parent!
+
+Shmget()
+Shared memory communication:
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
+
+int main() {
+    int shmid;
+    char* shared_memory;
+    key_t key = ftok(".", 'S');
+
+    shmid = shmget(key, 1024, IPC_CREAT | 0666);
+    if (shmid == -1) {
+        perror("Shared memory creation failed");
+        return 1;
+    }
+
+    shared_memory = shmat(shmid, NULL, 0);
+    if (shared_memory == (char*)-1) {
+        perror("Attachment to shared memory failed");
+        return 1;
+    }
+
+    sprintf(shared_memory, "Hello from shared memory!");
+
+    printf("Parent process wrote to shared memory: %s\n", shared_memory);
+
+    shmdt(shared_memory);  // Detach from shared memory
+
+    return 0;
+}
+Output:
+Parent process wrote to shared memory: Hello from shared memory!
+
+(umask):
+#include <stdio.h>
+#include <sys/stat.h>
+
+int main() {
+    mode_t mask = umask(S_IWGRP | S_IWOTH);  // 0022 mask
+
+    printf("Umask set: %03o\n", mask);
+
+    return 0;
+}
+Output:
+Umask set: 022
